@@ -77,13 +77,16 @@
         const configurator = new ShedPro;
         configurator.Configurator('https://demo.shedpro.co/product/aframe-deluxe-porch/', 'configurator-placeholder');
         document.getElementById("save-button").addEventListener('click', async function(){
-           
             const data = await configurator.getData();
+            console.log("configurator data", data);
+
+            // Gửi message lên parent
             window.parent.postMessage({
                 type: 'configuratorData',
                 payload: data
             }, '*');
-            console.log(data);
+
+            alert("Đã gửi dữ liệu lên parent. Hãy kiểm tra console của parent để xác nhận đã nhận được message.");
         });
     </script>
 </body>
