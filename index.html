@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://d3a0wbzsxhj3je.cloudfront.net/wp-content/uploads/2021/03/shedpro-favicon.png"
+        sizes="32x32" />
+    <link rel="icon" href="https://d3a0wbzsxhj3je.cloudfront.net/wp-content/uploads/2021/03/shedpro-favicon.png"
+        sizes="192x192" />
+    <link rel="apple-touch-icon"
+        href="https://d3a0wbzsxhj3je.cloudfront.net/wp-content/uploads/2021/03/shedpro-favicon.png" />
+    <meta name="msapplication-TileImage"
+        content="https://d3a0wbzsxhj3je.cloudfront.net/wp-content/uploads/2021/03/shedpro-favicon.png" />
+    <title>ShedPro Viewer</title>
+    <script type="text/javascript" src="https://developer.shedpro.co/libs/dist/shedpro-emebed.min.js"></script>
+    <style>
+        body{
+            margin: 0;
+        }
+        button{
+            color: #fff;
+            border: 0;
+            height: 44px;
+            border-radius: 8px;
+            width: 130px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        #cancel-button{
+            background: #ffffff;
+            border-width: 1px;
+            border-style: solid;
+            border-color: #D0D5DD;
+            color: #324054;
+        }
+        #cancel-button:hover{
+            background: #a7a7a7;
+        }
+        #save-button{
+            background: #165EEF;
+        }
+        img{
+            max-width: 100%;
+        }
+        .header a{
+            display: block;
+            float: left;
+            width: 150px;
+        }
+        .header{
+            text-align: right;
+            padding: 10px 20px;
+            background: #2b3b63;
+            overflow: hidden;
+        }
+        .nav {
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            margin: 0px 24px;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="configurator-placeholder"></div>
+    <div class="nav">
+        <button type="button" id="cancel-button">Cancel</button>
+        <button type="button" id="save-button">Save</button>
+    </div>
+    <script>
+        // Tất cả các button trong .nav sẽ được căn phải (flex-end)
+        const configurator = new ShedPro;
+        configurator.Configurator('https://demo.shedpro.co/product/aframe-deluxe-porch/', 'configurator-placeholder');
+        document.getElementById("save-button").addEventListener('click', async function(){
+           
+            const data = await configurator.getData();
+            window.parent.postMessage({
+                type: 'configuratorData',
+                payload: data
+            }, '*');
+            console.log(data);
+        });
+    </script>
+</body>
+</html>
