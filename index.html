@@ -30,13 +30,11 @@
         }
         #configurator-placeholder {
             width: 100vw;
-            height: calc(100vh - 70px);
+            height: calc(100vh - 40px);
             box-sizing: border-box;
             overflow: auto;
             position: relative;
             display: flex;
-            justify-content: center;
-            align-items: center;
         }
         button{
             color: #fff;
@@ -82,9 +80,9 @@
             display: flex;
             justify-content: flex-end;
             align-items: flex-end;
-            padding: 12px 0px;
+            padding: 16px;
             gap: 16px;
-            padding: 0px 16px;
+            background: transparent;
         }
         /* Loader view full screen styles */
         .loader-view {
@@ -130,10 +128,24 @@
             border-radius: 22px;
             background: #D0D5DD;
         }
+        /* Thêm style cho top-nav */
+        .top-nav {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100vw;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            z-index: 1100;
+            background: transparent;
+            padding: 8px 16px 0 0;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
-    <div class="nav">
+    <div class="top-nav">
         <button type="button" id="close-button" class="close-btn" title="Close">
             &#10005;
         </button>
