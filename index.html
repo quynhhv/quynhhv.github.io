@@ -61,6 +61,9 @@
         #save-button{
             background: #165EEF;
         }
+        #save-button:hover{
+            background: #1043AB;
+        }
         img{
             max-width: 100%;
         }
@@ -120,6 +123,12 @@
             background-color: transparent;
             color: #324054;
             cursor: pointer;
+        }
+        .close-btn:hover {
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            background: #D0D5DD;
         }
     </style>
 </head>
@@ -184,9 +193,6 @@
                 payload: data
             }, '*');
         });
-        window.addEventListener('message', function(event) {
-        alert(event.type);
-      });
     </script>
 </body>
 </html>
