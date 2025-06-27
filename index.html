@@ -16,8 +16,27 @@
     <title>ShedPro Viewer</title>
     <script type="text/javascript" src="https://developer.shedpro.co/libs/dist/shedpro-emebed.min.js"></script>
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
         body{
             margin: 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        #configurator-placeholder {
+            width: 100vw;
+            height: calc(100vh - 70px);
+            box-sizing: border-box;
+            overflow: auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         button{
             color: #fff;
@@ -60,34 +79,114 @@
             display: flex;
             justify-content: flex-end;
             align-items: flex-end;
-            margin: 0px 24px;
+            padding: 12px 0px;
             gap: 16px;
-            margin-bottom: 24px;
+            padding: 0px 16px;
+        }
+        /* Loader view full screen styles */
+        .loader-view {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.7);
+            z-index: 1000;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #165EEF;
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+
+        .close-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            padding: 0;
+            background-color: transparent;
+            color: #324054;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
+    <div class="nav">
+        <button type="button" id="close-button" class="close-btn" title="Close">
+            &#10005;
+        </button>
+    </div>
+    
     <div id="configurator-placeholder"></div>
+    <!-- Loader view sẽ hiển thị full màn hình -->
+    <div id="loader-view" class="loader-view">
+        <div class="spinner"></div>
+    </div>
     <div class="nav">
         <button type="button" id="cancel-button">Cancel</button>
         <button type="button" id="save-button">Save</button>
     </div>
     <script>
-        // Tất cả các button trong .nav sẽ được căn phải (flex-end)
+        // Hiển thị loader-view khi bắt đầu
+        document.getElementById('loader-view').style.display = 'flex';
+
+        // Không cần đồng bộ width/height nữa vì loader-view đã full màn hình
+
         const configurator = new ShedPro;
         configurator.Configurator('https://demo.shedpro.co/product/aframe-deluxe-porch/', 'configurator-placeholder');
+
+        // Ẩn loader-view khi iframe đã render xong
+        // Giả sử iframe là phần tử con đầu tiên của #configurator-placeholder
+        function hideLoaderWhenIframeLoaded() {
+            const placeholder = document.getElementById('configurator-placeholder');
+            const loader = document.getElementById('loader-view');
+            // Tìm iframe trong placeholder
+            const iframe = placeholder.querySelector('iframe');
+            if (iframe) {
+                // Nếu iframe đã có, lắng nghe sự kiện load
+                iframe.addEventListener('load', function() {
+                    loader.style.display = 'none';
+                });
+            } else {
+                setTimeout(hideLoaderWhenIframeLoaded, 100);
+            }
+        }
+        hideLoaderWhenIframeLoaded();
+
+        function postMessageClosePopup() {
+            window.parent.postMessage({
+                type: 'configuratorData',
+                payload: {}
+            }, '*');
+        }
+
+        document.getElementById("close-button").addEventListener('click', postMessageClosePopup);
+        document.getElementById("cancel-button").addEventListener('click', postMessageClosePopup);
         document.getElementById("save-button").addEventListener('click', async function(){
             const data = await configurator.getData();
             console.log("configurator data", data);
 
-            // Gửi message lên parent
             window.parent.postMessage({
                 type: 'configuratorData',
                 payload: data
             }, '*');
-
-            alert("Đã gửi dữ liệu lên parent. Hãy kiểm tra console của parent để xác nhận đã nhận được message.");
         });
+        window.addEventListener('message', function(event) {
+        alert(event.type);
+      });
     </script>
 </body>
 </html>
