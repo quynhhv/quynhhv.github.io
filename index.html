@@ -128,7 +128,7 @@
             border-radius: 22px;
             background: #D0D5DD;
         }
-        /* Thêm style cho top-nav */
+        /* Add style for top-nav */
         .top-nav {
             position: absolute;
             top: 0;
@@ -152,7 +152,7 @@
     </div>
     
     <div id="configurator-placeholder"></div>
-    <!-- Loader view sẽ hiển thị full màn hình -->
+    <!-- Loader view will display full screen -->
     <div id="loader-view" class="loader-view">
         <div class="spinner"></div>
     </div>
@@ -161,23 +161,23 @@
         <button type="button" id="save-button">Save</button>
     </div>
     <script>
-        // Hiển thị loader-view khi bắt đầu
+        // Show loader-view at the beginning
         document.getElementById('loader-view').style.display = 'flex';
 
-        // Không cần đồng bộ width/height nữa vì loader-view đã full màn hình
+        // No need to sync width/height because loader-view is already full screen
 
         const configurator = new ShedPro;
         configurator.Configurator('https://demo.shedpro.co/product/aframe-deluxe-porch/', 'configurator-placeholder');
 
-        // Ẩn loader-view khi iframe đã render xong
-        // Giả sử iframe là phần tử con đầu tiên của #configurator-placeholder
+        // Hide loader-view when iframe has finished rendering
+        // Assume iframe is the first child element of #configurator-placeholder
         function hideLoaderWhenIframeLoaded() {
             const placeholder = document.getElementById('configurator-placeholder');
             const loader = document.getElementById('loader-view');
-            // Tìm iframe trong placeholder
+            // Find iframe in placeholder
             const iframe = placeholder.querySelector('iframe');
             if (iframe) {
-                // Nếu iframe đã có, lắng nghe sự kiện load
+                // If iframe exists, listen for load event
                 iframe.addEventListener('load', function() {
                     loader.style.display = 'none';
                 });
@@ -185,7 +185,6 @@
                 setTimeout(hideLoaderWhenIframeLoaded, 100);
             }
         }
-        hideLoaderWhenIframeLoaded();
 
         function postMessageClosePopup() {
             window.parent.postMessage({
@@ -194,16 +193,35 @@
             }, '*');
         }
 
+        function listenToConfiguratorData() {
+            window.addEventListener('message', function(event) {
+                if (event.data.type === 'configuratorLoadModel' && event.data.payload?.modelUrl) {
+                    configurator.load(event.data.payload?.modelUrl);
+                }
+            });
+        }
+        
+        hideLoaderWhenIframeLoaded();
+        listenToConfiguratorData();
+
         document.getElementById("close-button").addEventListener('click', postMessageClosePopup);
         document.getElementById("cancel-button").addEventListener('click', postMessageClosePopup);
         document.getElementById("save-button").addEventListener('click', async function(){
-            const data = await configurator.getData();
-            console.log("configurator data", data);
-
-            window.parent.postMessage({
-                type: 'configuratorData',
-                payload: data
-            }, '*');
+            // Show loader when Save button is clicked
+            document.getElementById('loader-view').style.display = 'flex';
+            try {
+                const data = await configurator.getData();
+                window.parent.postMessage({
+                    type: 'configuratorData',
+                    payload: data
+                }, '*');
+            } catch (e) {
+                // You can show an error message here if you want
+                alert('An error occurred while retrieving configuration data!');
+            } finally {
+                // Hide loader after data is retrieved (success or failure)
+                document.getElementById('loader-view').style.display = 'none';
+            }
         });
     </script>
 </body>
