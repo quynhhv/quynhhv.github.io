@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -161,9 +160,27 @@
         <button type="button" id="save-button">Save</button>
     </div>
     <script>
+        // Kiểm tra localStorage có được hỗ trợ không
+        function isLocalStorageSupported() {
+            try {
+                var testKey = '__test__';
+                localStorage.setItem(testKey, '1');
+                localStorage.removeItem(testKey);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        if (isLocalStorageSupported()) {
+            localStorage.setItem('cacheModelUrl', 'https://demo.shedpro.co/product/aframe-deluxe-porch/');
+        } else {
+            console.log('Browser does not support localStorage');
+        }
+
         // Show loader-view at the beginning
         document.getElementById('loader-view').style.display = 'flex';
-
+        
         // No need to sync width/height because loader-view is already full screen
         let cacheModelUrl = '';
         const configurator = new ShedPro;
@@ -212,6 +229,7 @@
             document.getElementById('loader-view').style.display = 'flex';
             try {
                 const data = await configurator.getData();
+                cacheModelUrl = data?.building_details_v2?.model_url;
                 window.parent.postMessage({
                     type: 'configuratorData',
                     payload: data
