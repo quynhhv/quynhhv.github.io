@@ -1,0 +1,33 @@
+<div style="max-width:400px;margin:40px auto;padding:24px;border:1px solid #ccc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <label for="website-link" style="display:block;margin-bottom:8px;font-weight:500;">Enter website URL:</label>
+    <input type="text" id="website-link" placeholder="https://example.com" style="width:100%;padding:8px 12px;border:1px solid #bbb;border-radius:4px;margin-bottom:12px;font-size:16px;" />
+    <button id="submit-link" type="button" disabled style="width:100%;padding:10px 0;background:#007bff;color:#fff;border:none;border-radius:4px;font-size:16px;cursor:pointer;opacity:0.7;">Submit</button>
+</div>
+<script>
+    // Function to check if the URL is valid
+    function isValidUrl(url) {
+        try {
+            const u = new URL(url);
+            return u.protocol === "http:" || u.protocol === "https:";
+        } catch (e) {
+            return false;
+        }
+    }
+
+    const input = document.getElementById('website-link');
+    const button = document.getElementById('submit-link');
+
+    input.addEventListener('input', function() {
+        if (isValidUrl(input.value.trim())) {
+            button.disabled = false;
+            button.style.opacity = 1;
+        } else {
+            button.disabled = true;
+            button.style.opacity = 0.7;
+        }
+    });
+
+    button.addEventListener('click', function() {
+        alert('Valid link: ' + input.value.trim());
+    });
+</script>
