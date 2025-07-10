@@ -1,10 +1,10 @@
 <div style="max-width:400px;margin:40px auto;padding:24px;border:1px solid #ccc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-    <label for="website-link" style="display:block;margin-bottom:8px;font-weight:500;">Nhập URL website:</label>
+    <label for="website-link" style="display:block;margin-bottom:8px;font-weight:500;">Enter website URL:</label>
     <input type="text" id="website-link" placeholder="https://example.com" style="width:100%;padding:8px 12px;border:1px solid #bbb;border-radius:4px;margin-bottom:12px;font-size:16px;" />
-    <button id="submit-link" type="button" disabled style="width:100%;padding:10px 0;background:#007bff;color:#fff;border:none;border-radius:4px;font-size:16px;cursor:pointer;opacity:0.7;">Gửi</button>
+    <button id="submit-link" type="button" disabled style="width:100%;padding:10px 0;background:#007bff;color:#fff;border:none;border-radius:4px;font-size:16px;cursor:pointer;opacity:0.7;">Submit</button>
 </div>
 <script>
-    // Hàm kiểm tra URL hợp lệ
+    // Function to check if URL is valid
     function isValidUrl(url) {
         try {
             const u = new URL(url);
@@ -14,7 +14,7 @@
         }
     }
 
-    // Hàm lấy params từ url của trang hiện tại
+    // Function to get params from current page URL
     function getParamsFromCurrentPage() {
         const params = {};
         const searchParams = new URLSearchParams(window.location.search);
@@ -24,45 +24,27 @@
         return params;
     }
 
-     // Kiểm tra localStorage có được hỗ trợ không
-     function isLocalStorageSupported() {
-        try {
-            var testKey = '__test__';
-            localStorage.setItem(testKey, '1');
-            localStorage.removeItem(testKey);
-            console.log("isLocalStorageSupported store");
-            return true;
-        } catch (e) {
-            console.log("isLocalStorageSupported don't support");
-            return false;
-        }
-    }
-
     if (isLocalStorageSupported()) {
-        localStorage.setItem('token', 'https://demo.shedpro.co/product/aframe-deluxe-porch/');
         console.log('token', localStorage.getItem('token'));
     } else {
         console.log('Browser does not support localStorage');
-    }   
+    }
 
-    // Ví dụ: log ra params của trang hiện tại
-    console.log('Params của trang hiện tại:', getParamsFromCurrentPage());
-    
+    // Example: log params of current page
+    console.log('Current page params:', getParamsFromCurrentPage());
     console.log("localstorage", localStorage);
 
-
-    // Hàm lấy location/accountId từ URL của GHL (GoHighLevel)
+    // Function to get location/accountId from GHL (GoHighLevel) URL
     function getGhlLocationIdFromUrl(url) {
         try {
             const u = new URL(url);
-            // GHL locationId thường nằm ở path hoặc query, ví dụ: /locations/{locationId}/...
-            // hoặc ?location_id=xxx
-            // Ưu tiên lấy từ path
+            // GHL locationId is usually in path or query, e.g. /locations/{locationId}/... or ?location_id=xxx
+            // Prefer path
             const pathMatch = u.pathname.match(/\/locations\/([^\/]+)/);
             if (pathMatch && pathMatch[1]) {
                 return pathMatch[1];
             }
-            // Nếu không có trong path, thử lấy từ query
+            // If not in path, try query
             const params = new URLSearchParams(u.search);
             if (params.has('location_id')) {
                 return params.get('location_id');
@@ -73,7 +55,7 @@
         }
     }
 
-    // Hàm lấy params từ URL bất kỳ (khác với getParamsFromCurrentPage)
+    // Function to get params from any URL (different from getParamsFromCurrentPage)
     function getParamsFromUrl(url) {
         const params = {};
         try {
@@ -101,9 +83,9 @@
         const url = input.value.trim();
         if (isValidUrl(url)) {
             const params = getParamsFromUrl(url);
-            alert('Các tham số trong URL: ' + JSON.stringify(params));
+            alert('URL parameters: ' + JSON.stringify(params));
         } else {
-            alert('Link không hợp lệ');
+            alert('Invalid link');
         }
     });
 </script>

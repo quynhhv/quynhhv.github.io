@@ -172,13 +172,6 @@
             }
         }
 
-        if (isLocalStorageSupported()) {
-            localStorage.setItem('cacheModelUrl', 'https://demo.shedpro.co/product/aframe-deluxe-porch/');
-            console.log('cacheModelUrl', localStorage.getItem('cacheModelUrl'));
-        } else {
-            console.log('Browser does not support localStorage');
-        }
-
         // Show loader-view at the beginning
         document.getElementById('loader-view').style.display = 'flex';
         
