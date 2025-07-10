@@ -24,12 +24,6 @@
         return params;
     }
 
-    if (isLocalStorageSupported()) {
-        console.log('token', localStorage.getItem('token'));
-    } else {
-        console.log('Browser does not support localStorage');
-    }
-
     // Example: log params of current page
     console.log('Current page params:', getParamsFromCurrentPage());
     console.log("localstorage", localStorage);
