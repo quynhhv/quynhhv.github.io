@@ -1,9 +1,64 @@
-<div style="max-width:400px;margin:40px auto;padding:24px;border:1px solid #ccc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-    <label for="website-link" style="display:block;margin-bottom:8px;font-weight:500;">Enter website URL:</label>
-    <input type="text" id="website-link" placeholder="https://example.com" style="width:100%;padding:8px 12px;border:1px solid #bbb;border-radius:4px;margin-bottom:12px;font-size:16px;" />
-    <button id="submit-link" type="button" disabled style="width:100%;padding:10px 0;background:#007bff;color:#fff;border:none;border-radius:4px;font-size:16px;cursor:pointer;opacity:0.7;">Submit</button>
+<!-- Thêm font Proxima Nova từ CDN hoặc @font-face -->
+<link href="https://fonts.cdnfonts.com/css/proxima-nova" rel="stylesheet">
+<style>
+    body, .config-container, .config-logo-wrapper, .config-logo, .config-label, .config-input, .config-button {
+        font-family: 'Proxima Nova', 'Arial', sans-serif !important;
+    }
+    .config-container {
+        max-width: 480px;
+        margin: 40px auto;
+        padding: 24px;
+        border-radius: 8px;
+    }
+    .config-logo-wrapper {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .config-logo {
+        max-width: 240px;
+        width: 100%;
+        height: auto;
+        display: inline-block;
+    }
+    .config-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600; /* Sử dụng semi bold */
+        margin-top: 60px;
+    }
+    .config-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        font-size: 16px;
+    }
+    .config-button {
+        margin-top: 20px;
+        width: 100%;
+        padding: 10px 0;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+</style>
+<div class="config-container">
+    <div class="config-logo-wrapper">
+        <img src="https://dxm5q5264srx2.cloudfront.net/wp-content/uploads/sites/4/2023/04/Powered-by-ShedPro.svg" alt="Powered by ShedPro" class="config-logo" />
+    </div>
+    <label for="website-link" class="config-label">Enter 3D website URL</label>
+    <input type="text" id="website-link" placeholder="https://demo.shedpro.co/product/aframe-deluxe-porch/" class="config-input" />
+    <button id="submit-link" type="button" disabled class="config-button">Save</button>
 </div>
 <script>
+    const HOOK_AUTH = "https://hook.us2.make.com/is7fyff86yli13p2e35cvperil4g8a6q";
+    const UUID = "19706c2b-e70e-47cb-89da-fdc0935db714";
+    let locationId = undefined;
     // Function to check if URL is valid
     function isValidUrl(url) {
         try {
@@ -24,42 +79,57 @@
         return params;
     }
 
-    // Example: log params of current page
-    console.log('Current page params:', getParamsFromCurrentPage());
-    console.log("localstorage", localStorage);
-
-    // Function to get location/accountId from GHL (GoHighLevel) URL
-    function getGhlLocationIdFromUrl(url) {
+    // Function to save value to localStorage
+    function setLocalStorage(key, value) {
         try {
-            const u = new URL(url);
-            // GHL locationId is usually in path or query, e.g. /locations/{locationId}/... or ?location_id=xxx
-            // Prefer path
-            const pathMatch = u.pathname.match(/\/locations\/([^\/]+)/);
-            if (pathMatch && pathMatch[1]) {
-                return pathMatch[1];
-            }
-            // If not in path, try query
-            const params = new URLSearchParams(u.search);
-            if (params.has('location_id')) {
-                return params.get('location_id');
-            }
-            return null;
+            localStorage.setItem(key, JSON.stringify(value));
         } catch (e) {
-            return null;
+            console.error('Cannot save to localStorage:', e);
         }
     }
 
-    // Function to get params from any URL (different from getParamsFromCurrentPage)
-    function getParamsFromUrl(url) {
-        const params = {};
-        try {
-            const u = new URL(url);
-            for (const [key, value] of u.searchParams.entries()) {
-                params[key] = value;
+    async function getParamsAndFetchIfCode() {
+        const params = getParamsFromCurrentPage();
+        console.log("params.code", params?.code);
+        if (params.code) {
+            try {
+                // Change the API URL below to match your system
+                const apiUrl = `${HOOK_AUTH}?code=${encodeURIComponent(params.code)}`;
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'x-make-apikey': UUID,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Error calling API');
+                }
+                const data = await response.json();
+                const access_token = data.access_token;
+                const token_type = data.token_type;
+                const expires_in = data.expires_in;
+                const refresh_token = data.refresh_token;
+                locationId = data.locationId;
+                setLocalStorage("access_token", access_token);
+                setLocalStorage("token_type", token_type);
+                setLocalStorage("expires_in", expires_in);
+                setLocalStorage("refresh_token", refresh_token);
+                setLocalStorage("locationId", locationId);
+                // You can handle the data here, for example: display it on the UI
+            } catch (error) {
+                console.error('Error fetching data from API:', error);
             }
-        } catch (e) {}
-        return params;
+        }
     }
+
+
+
+    getParamsAndFetchIfCode();
+
+    console.log('Current page params:', getParamsFromCurrentPage());
+    console.log("localstorage", localStorage);
+    
+
     const input = document.getElementById('website-link');
     const button = document.getElementById('submit-link');
 
@@ -67,17 +137,41 @@
         if (isValidUrl(input.value.trim())) {
             button.disabled = false;
             button.style.opacity = 1;
+            button.style.cursor = 'pointer';
         } else {
             button.disabled = true;
             button.style.opacity = 0.7;
+            button.style.cursor = 'not-allowed';
         }
     });
+
+    async function apiUpdate3DUrl(body = {}) {
+        try {
+            const apiUrl = 'https://hook.us2.make.com/vkv1k3v47cew2452pi8bj3pxr21n5qhr';
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-make-apikey': UUID
+                },
+                body: JSON.stringify(body)
+            });
+            if (!response.ok) {
+                throw new Error('Error calling API');
+            }
+            const data = await response.json();
+            console.log("update apiUpdate3DUrl success");
+            return data;
+        } catch (error) {
+            console.error('Error calling API POST:', error);
+            throw error;
+        }
+    }
 
     button.addEventListener('click', function() {
         const url = input.value.trim();
         if (isValidUrl(url)) {
-            const params = getParamsFromUrl(url);
-            alert('URL parameters: ' + JSON.stringify(params));
+            apiUpdate3DUrl({ "3durl": url, locationId })
         } else {
             alert('Invalid link');
         }
