@@ -24,9 +24,66 @@
         return params;
     }
 
+     // Kiểm tra localStorage có được hỗ trợ không
+     function isLocalStorageSupported() {
+        try {
+            var testKey = '__test__';
+            localStorage.setItem(testKey, '1');
+            localStorage.removeItem(testKey);
+            console.log("isLocalStorageSupported store");
+            return true;
+        } catch (e) {
+            console.log("isLocalStorageSupported don't support");
+            return false;
+        }
+    }
+
+    if (isLocalStorageSupported()) {
+        localStorage.setItem('token', 'https://demo.shedpro.co/product/aframe-deluxe-porch/');
+        console.log('token', localStorage.getItem('token'));
+    } else {
+        console.log('Browser does not support localStorage');
+    }   
+
     // Ví dụ: log ra params của trang hiện tại
     console.log('Params của trang hiện tại:', getParamsFromCurrentPage());
+    
+    console.log("localstorage", localStorage);
 
+
+    // Hàm lấy location/accountId từ URL của GHL (GoHighLevel)
+    function getGhlLocationIdFromUrl(url) {
+        try {
+            const u = new URL(url);
+            // GHL locationId thường nằm ở path hoặc query, ví dụ: /locations/{locationId}/...
+            // hoặc ?location_id=xxx
+            // Ưu tiên lấy từ path
+            const pathMatch = u.pathname.match(/\/locations\/([^\/]+)/);
+            if (pathMatch && pathMatch[1]) {
+                return pathMatch[1];
+            }
+            // Nếu không có trong path, thử lấy từ query
+            const params = new URLSearchParams(u.search);
+            if (params.has('location_id')) {
+                return params.get('location_id');
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Hàm lấy params từ URL bất kỳ (khác với getParamsFromCurrentPage)
+    function getParamsFromUrl(url) {
+        const params = {};
+        try {
+            const u = new URL(url);
+            for (const [key, value] of u.searchParams.entries()) {
+                params[key] = value;
+            }
+        } catch (e) {}
+        return params;
+    }
     const input = document.getElementById('website-link');
     const button = document.getElementById('submit-link');
 
