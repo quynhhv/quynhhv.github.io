@@ -160,7 +160,17 @@
         <button type="button" id="save-button">Save</button>
     </div>
     <script>
-        // Kiểm tra localStorage có được hỗ trợ không
+
+        // Function to get params from current page URL
+        function getParamsFromCurrentPage() {
+            const params = {};
+            const searchParams = new URLSearchParams(window.location.search);
+            for (const [key, value] of searchParams.entries()) {
+                params[key] = value;
+            }
+            return params;
+        }
+
         function isLocalStorageSupported() {
             try {
                 var testKey = '__test__';
@@ -172,6 +182,29 @@
             }
         }
 
+        // Function to get 3dUrl from locationId
+        async function get3DUrlFromLocationId(locationId) {
+            try {
+                const apiUrl = `https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z?locationId=${encodeURIComponent(locationId)}`;
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'x-make-apikey': UUID,
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Error calling API to get 3dUrl');
+                }
+                const data = await response.json();
+                return data?.["3dUrl"];;
+            } catch (error) {
+                console.error('Error getting 3dUrl from locationId:', error);
+                return null;
+            }
+        }
+
+       
+
         // Show loader-view at the beginning
         document.getElementById('loader-view').style.display = 'flex';
         
@@ -179,6 +212,16 @@
         let cacheModelUrl = '';
         const configurator = new ShedPro;
         configurator.Configurator('https://demo.shedpro.co/product/aframe-deluxe-porch/', 'configurator-placeholder');
+
+
+        (async function() {
+           const params = getParamsFromCurrentPage();
+           if (params.locationId) {
+                const url = await get3DUrlFromLocationId(params.locationId);
+                console.log("3dUrl",url);
+                configurator.load(url);
+           }
+        })();
 
         // Hide loader-view when iframe has finished rendering
         // Assume iframe is the first child element of #configurator-placeholder

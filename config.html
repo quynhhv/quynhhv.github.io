@@ -192,7 +192,7 @@
         try {
             showLoading();
             // Thay đổi API URL để encode locationId
-            const apiUrl = `https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z?locationId=baQSgKAEfJb7RbEwgZ9J`;
+            const apiUrl = `https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z?locationId=${locationId}`;
             const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
