@@ -155,7 +155,7 @@
             try {
                 showLoading();
                 // Change the API URL below to match your system
-                const apiUrl = `${HOOK_AUTH}?code=${encodeURIComponent(params.code)}`;
+                const apiUrl = `${HOOK_AUTH_API}?code=${encodeURIComponent(params.code)}`;
                 const response = await fetch(apiUrl, {
                     headers: {
                         'x-make-apikey': UUID,
