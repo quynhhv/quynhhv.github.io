@@ -159,6 +159,7 @@
         try {
             if (window.parent && window.parent !== window) {
                 const parentUrl = document.referrer || (window.parent.location ? window.parent.location.href : '');
+                console.log("parentUrl", parentUrl);
                 if (parentUrl) {
                    return parseLocationFromUrl(parentUrl);
                 }
@@ -232,7 +233,7 @@
             }
         } else {
             const parentParams = getParamsFromParentUrl();
-            
+            console.log("parentParams", parentParams); 
         }
 
     }
