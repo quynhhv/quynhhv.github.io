@@ -139,6 +139,52 @@
         return params;
     }
 
+
+    // Function parseLocationFromUrl to get locationId from GHL URL
+    function parseLocationFromUrl(url) {
+        // Example url: https://app.gohighlevel.com/v2/location/baQSgKAEfJb7RbEwgZ9J/opportunities/list
+        try {
+            const match = url.match(/\/location\/([^\/]+)/);
+            if (match && match[1]) {
+            return match[1];
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Function to get params from the parent window's URL (if available)
+    function getParamsFromParentUrl() {
+        try {
+            if (window.parent && window.parent !== window) {
+                const parentUrl = document.referrer || (window.parent.location ? window.parent.location.href : '');
+                if (parentUrl) {
+                   return parseLocationFromUrl(parentUrl);
+                }
+            }
+        } catch (e) {
+            // Some browsers may block access to window.parent.location for security reasons
+            // Can fallback to document.referrer
+            try {
+                const ref = document.referrer;
+                console.log("getParamsFromParentUrl ref", ref);
+                if (ref) {
+                    const params = {};
+                    const urlObj = new URL(ref);
+                    for (const [key, value] of urlObj.searchParams.entries()) {
+                        params[key] = value;
+                    }
+                    return params;
+                }
+            } catch (err) {
+                // Could not get anything
+                console.log("err", err);
+            }
+        }
+        return {};
+    }
+
     // Function to save value to localStorage
     function setLocalStorage(key, value) {
         try {
@@ -184,7 +230,11 @@
             } finally {
                 hideLoading();
             }
+        } else {
+            const parentParams = getParamsFromParentUrl();
+            
         }
+
     }
 
     // Function to get 3dUrl from locationId

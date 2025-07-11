@@ -172,6 +172,7 @@
             return params;
         }
 
+        
         function isLocalStorageSupported() {
             try {
                 var testKey = '__test__';
@@ -181,6 +182,20 @@
             } catch (e) {
                 return false;
             }
+        }
+
+        // Function parseLocationFromUrl to get locationId from GHL URL
+        function parseLocationFromUrl(url) {
+        // Example url: https://app.gohighlevel.com/v2/location/baQSgKAEfJb7RbEwgZ9J/opportunities/list
+        try {
+            const match = url.match(/\/location\/([^\/]+)/);
+            if (match && match[1]) {
+            return match[1];
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
         }
 
         // Function to get 3dUrl from locationId
@@ -222,6 +237,8 @@
                 const url = await get3DUrlFromLocationId(params.locationId);
                 console.log("3dUrl",url);
                 configurator.load(url);
+           } else {
+
            }
         })();
 
