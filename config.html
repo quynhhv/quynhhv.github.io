@@ -139,29 +139,18 @@
         return params;
     }
 
-
-    // Function parseLocationFromUrl to get locationId from GHL URL
-    function parseLocationFromUrl(url) {
-        // Example url: https://app.gohighlevel.com/v2/location/baQSgKAEfJb7RbEwgZ9J/opportunities/list
-        try {
-            const match = url.match(/\/location\/([^\/]+)/);
-            if (match && match[1]) {
-            return match[1];
-            }
-            return null;
-        } catch (e) {
-            return null;
-        }
-    }
-
     // Function to get params from the parent window's URL (if available)
     function getParamsFromParentUrl() {
         try {
             if (window.parent && window.parent !== window) {
                 const parentUrl = document.referrer || (window.parent.location ? window.parent.location.href : '');
-                console.log("parentUrl", parentUrl);
                 if (parentUrl) {
-                   return parseLocationFromUrl(parentUrl);
+                    const params = {};
+                    const urlObj = new URL(parentUrl);
+                    for (const [key, value] of urlObj.searchParams.entries()) {
+                        params[key] = value;
+                    }
+                    return params;
                 }
             }
         } catch (e) {
@@ -169,7 +158,6 @@
             // Can fallback to document.referrer
             try {
                 const ref = document.referrer;
-                console.log("getParamsFromParentUrl ref", ref);
                 if (ref) {
                     const params = {};
                     const urlObj = new URL(ref);
@@ -180,7 +168,6 @@
                 }
             } catch (err) {
                 // Could not get anything
-                console.log("err", err);
             }
         }
         return {};
@@ -231,11 +218,7 @@
             } finally {
                 hideLoading();
             }
-        } else {
-            const parentParams = getParamsFromParentUrl();
-            console.log("parentParams", parentParams); 
         }
-
     }
 
     // Function to get 3dUrl from locationId
@@ -339,6 +322,15 @@
             hideLoading();
         }
     }
+
+    window.addEventListener('message', (event) => {
+        // Optionally check event.origin for security
+        console.log("window GHL event", event);
+        if (event.data && event.data.locationId) {
+            const locationId = event.data.locationId;
+            console.log("locationId", locationId);
+        }
+    });
 
     button.addEventListener('click', async function() {
         const url = input.value.trim();
