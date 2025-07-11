@@ -46,6 +46,33 @@
         cursor: not-allowed;
         opacity: 0.5;
     }
+    .loading-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255,255,255,0.7);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #007bff;
+        font-weight: 600;
+        letter-spacing: 1px;
+        transition: opacity 0.2s;
+    }
+    .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        animation: spin 1s linear infinite;
+        margin-right: 16px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+    }
 </style>
 <div class="config-container">
     <div class="config-logo-wrapper">
@@ -55,10 +82,43 @@
     <input type="text" id="website-link" placeholder="https://demo.shedpro.co/product/aframe-deluxe-porch/" class="config-input" />
     <button id="submit-link" type="button" disabled class="config-button">Save</button>
 </div>
+<div id="loading-overlay" class="loading-overlay" style="display:none;">
+    <div class="loading-spinner"></div>
+</div>
 <script>
-    const HOOK_AUTH = "https://hook.us2.make.com/is7fyff86yli13p2e35cvperil4g8a6q";
+    const HOOK_AUTH_API = "https://hook.eu2.make.com/3kxcgpeeld62xia6gbfegnjp6bemsfca";
+    const GET_3DURL_API = "https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z";
     const UUID = "19706c2b-e70e-47cb-89da-fdc0935db714";
-    let locationId = undefined;
+
+    // Hàm hiển thị loading
+    function showLoading() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+    }
+    // Hàm ẩn loading
+    function hideLoading() {
+        document.getElementById('loading-overlay').style.display = 'none';
+    }
+
+    // Hàm lấy giá trị từ localStorage theo key, tự động parse JSON nếu có thể
+    function getLocalStorage(key) {
+        try {
+            const value = localStorage.getItem(key);
+            if (value === null) return null;
+            try {
+                return JSON.parse(value);
+            } catch (e) {
+                // Nếu không phải JSON, trả về dạng string gốc
+                return value;
+            }
+        } catch (e) {
+            console.error('Không thể lấy dữ liệu từ localStorage:', e);
+            return null;
+        }
+    }
+
+    let locationId = getLocalStorage('locationId');
+    let url3d = getLocalStorage('3dUrl');
+
     // Function to check if URL is valid
     function isValidUrl(url) {
         try {
@@ -90,9 +150,10 @@
 
     async function getParamsAndFetchIfCode() {
         const params = getParamsFromCurrentPage();
-        console.log("params.code", params?.code);
         if (params.code) {
+            console.log("getParamsAndFetchIfCode", params?.code);
             try {
+                showLoading();
                 // Change the API URL below to match your system
                 const apiUrl = `${HOOK_AUTH}?code=${encodeURIComponent(params.code)}`;
                 const response = await fetch(apiUrl, {
@@ -105,30 +166,87 @@
                     throw new Error('Error calling API');
                 }
                 const data = await response.json();
-                const access_token = data.access_token;
-                const token_type = data.token_type;
-                const expires_in = data.expires_in;
-                const refresh_token = data.refresh_token;
-                locationId = data.locationId;
-                setLocalStorage("access_token", access_token);
-                setLocalStorage("token_type", token_type);
-                setLocalStorage("expires_in", expires_in);
-                setLocalStorage("refresh_token", refresh_token);
-                setLocalStorage("locationId", locationId);
-                // You can handle the data here, for example: display it on the UI
+                if (data && data.access_token) {
+                    const access_token = data.access_token;
+                    const token_type = data.token_type;
+                    const expires_in = data.expires_in;
+                    const refresh_token = data.refresh_token;
+                    locationId = data.locationId;
+                    setLocalStorage("access_token", access_token);
+                    setLocalStorage("token_type", token_type);
+                    setLocalStorage("expires_in", expires_in);
+                    setLocalStorage("refresh_token", refresh_token);
+                    setLocalStorage("locationId", locationId);
+                    console.log("getLocalStorage",getLocalStorage("access_token"));
+                }
             } catch (error) {
                 console.error('Error fetching data from API:', error);
+            } finally {
+                hideLoading();
             }
         }
     }
 
+    // Function to get 3dUrl from locationId
+    async function get3DUrlFromLocationId() {
+        try {
+            showLoading();
+            // Thay đổi API URL để encode locationId
+            const apiUrl = `https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z?locationId=baQSgKAEfJb7RbEwgZ9J`;
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'x-make-apikey': UUID,
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Lỗi khi gọi API để lấy 3dUrl');
+            }
+            const data = await response.json();
+            // Giả sử API trả về { "3dUrl": "..." }
+            url3d =  data?.["3dUrl"] || '';
+            // Sau khi lấy thành công, set giá trị vào input
+            const input = document.getElementById('website-link');
+            if (input && url3d) {
+                input.value = url3d;
+                // Nếu url hợp lệ thì enable nút luôn
+                if (isValidUrl(url3d)) {
+                    const button = document.getElementById('submit-link');
+                    button.disabled = false;
+                    button.style.opacity = 1;
+                    button.style.cursor = 'pointer';
+                }
+            }
+            return data;
+        } catch (error) {
+            console.error('Error getting 3dUrl from locationId:', error);
+            return null;
+        } finally {
+            hideLoading();
+        }
+    }
 
-
-    getParamsAndFetchIfCode();
+    (async function() {
+        showLoading();
+        await getParamsAndFetchIfCode();
+        // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
+        if (locationId) {
+            await get3DUrlFromLocationId(locationId);
+        } else {
+            // Đợi 1 chút cho getParamsAndFetchIfCode lấy xong locationId
+            setTimeout(async () => {
+                locationId = getLocalStorage('locationId');
+                if (locationId) {
+                    await get3DUrlFromLocationId(locationId);
+                }
+                hideLoading();
+            }, 800);
+        }
+        hideLoading();
+    })();
 
     console.log('Current page params:', getParamsFromCurrentPage());
     console.log("localstorage", localStorage);
-    
 
     const input = document.getElementById('website-link');
     const button = document.getElementById('submit-link');
@@ -147,6 +265,7 @@
 
     async function apiUpdate3DUrl(body = {}) {
         try {
+            showLoading();
             const apiUrl = 'https://hook.us2.make.com/vkv1k3v47cew2452pi8bj3pxr21n5qhr';
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -165,13 +284,15 @@
         } catch (error) {
             console.error('Error calling API POST:', error);
             throw error;
+        } finally {
+            hideLoading();
         }
     }
 
-    button.addEventListener('click', function() {
+    button.addEventListener('click', async function() {
         const url = input.value.trim();
         if (isValidUrl(url)) {
-            apiUpdate3DUrl({ "3durl": url, locationId })
+            await apiUpdate3DUrl({ "3dUrl": url, locationId })
         } else {
             alert('Invalid link');
         }
