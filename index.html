@@ -173,17 +173,6 @@
             return params;
         }
 
-        function isLocalStorageSupported() {
-            try {
-                var testKey = '__test__';
-                localStorage.setItem(testKey, '1');
-                localStorage.removeItem(testKey);
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
-
         // Function to get 3dUrl from locationId
         async function get3DUrlFromLocationId(locationId) {
             try {
@@ -195,12 +184,20 @@
                     }
                 });
                 if (!response.ok) {
+                    posthog.capture('get3DUrlFromLocationId_api_error', {
+                        locationId: locationId,
+                        status: response.status,
+                        statusText: response.statusText
+                    });
                     throw new Error('Error calling API to get 3dUrl');
                 }
                 const data = await response.json();
-                return data?.["3dUrl"];;
+                return data?.["3dUrl"];
             } catch (error) {
-                console.error('Error getting 3dUrl from locationId:', error);
+                posthog.capture('get3DUrlFromLocationId_exception', {
+                    locationId: locationId,
+                    error: error?.message || error
+                });
                 return null;
             }
         }
@@ -218,11 +215,11 @@
 
         (async function() {
            const params = getParamsFromCurrentPage();
-           console.log('params', params);
            if (params.locationId) {
                 const url = await get3DUrlFromLocationId(params.locationId);
-                console.log("3dUrl",url);
-                configurator.load(url);
+                if (url && url.length > 0) {
+                    configurator.load(url);
+                }
            }
         })();
 
@@ -259,6 +256,7 @@
             });
         }
         
+        
         hideLoaderWhenIframeLoaded();
         listenToConfiguratorData();
 
@@ -276,7 +274,7 @@
                 }, '*');
             } catch (e) {
                 // You can show an error message here if you want
-                alert('An error occurred while retrieving configuration data!');
+                posthog.capture('save_configurator_error', { error: e?.message || e });
             } finally {
                 // Hide loader after data is retrieved (success or failure)
                 document.getElementById('loader-view').style.display = 'none';

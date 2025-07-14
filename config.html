@@ -90,11 +90,9 @@
     const GET_3DURL_API = "https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z";
     const UUID = "19706c2b-e70e-47cb-89da-fdc0935db714";
 
-    // Hàm hiển thị loading
     function showLoading() {
         document.getElementById('loading-overlay').style.display = 'flex';
     }
-    // Hàm ẩn loading
     function hideLoading() {
         document.getElementById('loading-overlay').style.display = 'none';
     }
@@ -107,7 +105,6 @@
             try {
                 return JSON.parse(value);
             } catch (e) {
-                // Nếu không phải JSON, trả về dạng string gốc
                 return value;
             }
         } catch (e) {
@@ -128,7 +125,6 @@
         }
     }
 
-    
 
     // Function to get params from current page URL
     function getParamsFromCurrentPage() {
@@ -186,7 +182,6 @@
     async function getParamsAndFetchIfCode() {
         const params = getParamsFromCurrentPage();
         if (params.code) {
-            console.log("getParamsAndFetchIfCode", params?.code);
             try {
                 showLoading();
                 // Change the API URL below to match your system
@@ -198,6 +193,12 @@
                     }
                 });
                 if (!response.ok) {
+                    // Gửi lỗi lên posthog
+                    posthog.capture('getParamsAndFetchIfCode_api_error', {
+                        code: params.code,
+                        status: response.status,
+                        statusText: response.statusText
+                    });
                     throw new Error('Error calling API');
                 }
                 const data = await response.json();
@@ -215,6 +216,11 @@
                     console.log("getLocalStorage",getLocalStorage("access_token"));
                 }
             } catch (error) {
+                // Gửi lỗi lên posthog
+                posthog.capture('getParamsAndFetchIfCode_exception', {
+                    code: params.code,
+                    error: error?.message || error
+                });
                 console.error('Error fetching data from API:', error);
             } finally {
                 hideLoading();
@@ -235,6 +241,12 @@
                 }
             });
             if (!response.ok) {
+                // Gửi lỗi lên posthog
+                posthog.capture('get3DUrlFromLocationId_api_error', {
+                    locationId: locationId,
+                    status: response.status,
+                    statusText: response.statusText
+                });
                 throw new Error('Lỗi khi gọi API để lấy 3dUrl');
             }
             const data = await response.json();
@@ -254,6 +266,11 @@
             }
             return data;
         } catch (error) {
+            // Gửi lỗi lên posthog
+            posthog.capture('get3DUrlFromLocationId_exception', {
+                locationId: locationId,
+                error: error?.message || error
+            });
             console.error('Error getting 3dUrl from locationId:', error);
             return null;
         } finally {
