@@ -1,4 +1,4 @@
-<!-- Thêm font Proxima Nova từ CDN hoặc @font-face -->
+<script src="posthog-init.js"></script>
 <link href="https://fonts.cdnfonts.com/css/proxima-nova" rel="stylesheet">
 <style>
     body, .config-container, .config-logo-wrapper, .config-logo, .config-label, .config-input, .config-button {
@@ -111,7 +111,6 @@
                 return value;
             }
         } catch (e) {
-            console.error('Không thể lấy dữ liệu từ localStorage:', e);
             return null;
         }
     }
