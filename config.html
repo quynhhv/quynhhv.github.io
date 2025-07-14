@@ -113,7 +113,7 @@
                 };
                 window.addEventListener('message', messageHandler);
             });
-            console.log("encryptedUserData", CryptoJS.AES.decrypt(encryptedUserData, "4b686719-6de6-4fe0-aac0-f79293a46784"));
+            console.log("encryptedUser", CryptoJS.AES.decrypt(encryptedUserData, "4b686719-6de6-4fe0-aac0-f79293a46784"));
             const decryptedBytes = CryptoJS.AES.decrypt(encryptedUserData, "4b686719-6de6-4fe0-aac0-f79293a46784");
             const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
 
