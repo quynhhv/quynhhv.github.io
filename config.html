@@ -97,6 +97,32 @@
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
+    async function getUserData() {
+        try {
+            const encryptedUserData = await new Promise((resolve) => {
+            // Request user data from parent window
+            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*')
+
+            // Listen for the response
+            const messageHandler = ({ data }) => {
+                if (data.message === 'REQUEST_USER_DATA_RESPONSE') {
+                window.removeEventListener('message', messageHandler)
+                resolve(data.payload)
+                }
+            }
+
+            window.addEventListener('message', messageHandler)
+            })
+
+            console.log("encryptedUserData", encryptedUserData);
+            // Send encrypted data to your backend for decryption
+            
+        } catch (error) {
+            console.error('Failed to fetch user data:', error)
+            throw error
+        }
+    }
+
     // Hàm lấy giá trị từ localStorage theo key, tự động parse JSON nếu có thể
     function getLocalStorage(key) {
         try {
@@ -213,7 +239,6 @@
                     setLocalStorage("expires_in", expires_in);
                     setLocalStorage("refresh_token", refresh_token);
                     setLocalStorage("locationId", locationId);
-                    console.log("getLocalStorage",getLocalStorage("access_token"));
                 }
             } catch (error) {
                 // Gửi lỗi lên posthog
@@ -280,6 +305,8 @@
 
     (async function() {
         showLoading();
+        const userData = await getUserData();
+        console.log("userData", userData);
         await getParamsAndFetchIfCode();
         // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
         if (locationId) {
