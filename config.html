@@ -79,6 +79,9 @@
     <div class="config-logo-wrapper">
         <img src="https://dxm5q5264srx2.cloudfront.net/wp-content/uploads/sites/4/2023/04/Powered-by-ShedPro.svg" alt="Powered by ShedPro" class="config-logo" />
     </div>
+    <!-- Location List Start -->
+    <div id="locations-list" style="max-height: 320px; overflow-y: auto; margin-bottom: 24px;"></div>
+    <!-- Location List End -->
     <label for="website-link" class="config-label">Enter 3D website URL</label>
     <input type="text" id="website-link" placeholder="https://demo.shedpro.co/product/aframe-deluxe-porch/" class="config-input" />
     <button id="submit-link" type="button" disabled class="config-button">Save</button>
@@ -91,6 +94,7 @@
     const GET_3DURL_API = "https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z";
     const UUID = "19706c2b-e70e-47cb-89da-fdc0935db714";
     const UUID_SHED_APP = "4b686719-6de6-4fe0-aac0-f79293a46784";
+
 
     function showLoading() {
         document.getElementById('loading-overlay').style.display = 'flex';
@@ -152,17 +156,25 @@
             if (!response.ok) {
               const errorData = await getErrorData(response)
               console.log("errorData", errorData);
-              if (errorData.error === 'invalid_grant') {
-                removeKey("access_token");
-                removeKey("token_type");
-                removeKey("expires_in");
-                removeKey("refresh_token");
-                return;
-            }
+                if (errorData.error === 'invalid_grant') {
+                    removeKey("access_token");
+                    removeKey("token_type");
+                    removeKey("expires_in");
+                    removeKey("refresh_token");
+                    return;
+                }
             }
             const data = await response.json();
             console.log("getAccessTokenFromGHL", data);
-            
+            const access_token = data.access_token;
+            const token_type = data.token_type;
+            const expires_in = data.expires_in;
+            const refresh_token = data.refresh_token;
+            setLocalStorage("access_token", access_token);
+            setLocalStorage("token_type", token_type);
+            setLocalStorage("expires_in", expires_in);
+            setLocalStorage("refresh_token", refresh_token);
+            setLocalStorage("locationId", locationId);
             return data.access_token;
         } catch (error) {
             console.error('Lỗi khi lấy access_token từ GHL:', error);
@@ -371,7 +383,86 @@
             hideLoading();
         }
     }
+    // Hàm lấy danh sách locations từ API
+    async function getLocations({ limit = 20, isInstalled = true, companyId = undefined, appId = undefined } = {}) {
+        try {
+            const accessToken = getLocalStorage("access_token");
+            if (!accessToken) {
+               return [];
+            }
+            let apiUrl = `https://services.leadconnectorhq.com/oauth/installedLocations?limit=${limit}&isInstalled=${isInstalled}`;
+            if (companyId) apiUrl += `&companyId=${encodeURIComponent(companyId)}`;
+            if (appId) apiUrl += `&appId=${encodeURIComponent(appId)}`;
 
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Version': '2021-07-28'
+                }
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Lỗi khi gọi API getLocations:', error);
+            return null;
+        }
+    }
+
+    // Render locations list
+    async function renderLocationsList() {
+        const container = document.getElementById('locations-list');
+        if (!container) return;
+        container.innerHTML = '<div style="text-align:center;color:#888;">Loading locations...</div>';
+        let locationsData = await getLocations({ limit: 50 });
+        if (!locationsData || !Array.isArray(locationsData.locations)) {
+            container.innerHTML = '<div style="color:red;">No locations found.</div>';
+            return;
+        }
+        const locations = locationsData.locations;
+        container.innerHTML = '';
+        locations.forEach(loc => {
+            const locDiv = document.createElement('div');
+            locDiv.style.marginBottom = '18px';
+            locDiv.innerHTML = `
+                <div style="font-weight:600;margin-bottom:6px;">${loc.name || loc.title || loc.locationName || 'Location'}</div>
+                <input type="text" class="config-input" id="location-url-${loc.id || loc.locationId}" placeholder="Enter 3D URL for this location" style="margin-bottom:0;" />
+                <button type="button" class="config-button" id="save-location-${loc.id || loc.locationId}" style="margin-top:8px;opacity:0.7;cursor:not-allowed;" disabled>Save</button>
+            `;
+            container.appendChild(locDiv);
+            // Add event listeners for input and button
+            const input = locDiv.querySelector('input');
+            const button = locDiv.querySelector('button');
+            input.addEventListener('input', function() {
+                if (isValidUrl(input.value.trim())) {
+                    button.disabled = false;
+                    button.style.opacity = 1;
+                    button.style.cursor = 'pointer';
+                } else {
+                    button.disabled = true;
+                    button.style.opacity = 0.7;
+                    button.style.cursor = 'not-allowed';
+                }
+            });
+            button.addEventListener('click', async function() {
+                // const url = input.value.trim();
+                // if (isValidUrl(url)) {
+                //     await apiUpdate3DUrl({ "3dUrl": url, locationId: loc.id || loc.locationId });
+                //     button.innerText = 'Saved!';
+                //     setTimeout(() => { button.innerText = 'Save'; }, 1200);
+                // } else {
+                //     alert('Invalid link');
+                // }
+            });
+        });
+    }
+
+    // Call renderLocationsList after user is authenticated and locations are available
     (async function() {
         showLoading();
         await getParamsAndFetchIfCode();
@@ -380,7 +471,7 @@
             setLocalStorage("userData", userData);
         }
         const accessToken = await getAccessTokenFromGHL();
-
+        await renderLocationsList();
        
         // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
         if (locationId) {
