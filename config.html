@@ -154,14 +154,18 @@
             });
             console.log("response", response);
             if (!response.ok) {
-              const errorData = await getErrorData(response)
-              console.log("errorData", errorData);
+                const AUTH_URL = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
+                if (response.status === 401) {
+                    window.location.href = AUTH_URL
+                    return;
+                }
+                const errorData = await getErrorData(response)
                 if (errorData.error === 'invalid_grant' || errorData.error === 'UnAuthorized!') {
                     removeKey("access_token");
                     removeKey("token_type");
                     removeKey("expires_in");
                     removeKey("refresh_token");
-                    window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
+                    window.location.href = AUTH_URL;
                     return;
                 }
             }
@@ -450,16 +454,6 @@
                     button.style.cursor = 'not-allowed';
                 }
             });
-            button.addEventListener('click', async function() {
-                // const url = input.value.trim();
-                // if (isValidUrl(url)) {
-                //     await apiUpdate3DUrl({ "3dUrl": url, locationId: loc.id || loc.locationId });
-                //     button.innerText = 'Saved!';
-                //     setTimeout(() => { button.innerText = 'Save'; }, 1200);
-                // } else {
-                //     alert('Invalid link');
-                // }
-            });
         });
     }
 
@@ -493,8 +487,6 @@
         hideLoading();
     })();
 
-    console.log('Current page params:', getParamsFromCurrentPage());
-    console.log("localstorage", localStorage);
 
     const input = document.getElementById('website-link');
     const button = document.getElementById('submit-link');
