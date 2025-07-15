@@ -322,10 +322,12 @@ async function get3DUrlFromLocationId() {
     }
 }
 
+
 // Main initialization
 (async function() {
     showLoading();
     const userData = await getUserData();
+    console.log("userData", userData);
     const accessToken = await getAccessTokenFromParent();
     console.log("accessToken", accessToken);
     if (accessToken) {
