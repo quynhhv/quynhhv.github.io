@@ -99,6 +99,19 @@
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
+    // Lấy access_token từ parent window qua postMessage
+    async function getAccessTokenFromParent() {
+        return new Promise((resolve) => {
+            window.parent.postMessage({ message: 'REQUEST_ACCESS_TOKEN' }, '*');
+            const handler = (event) => {
+                if (event.data && event.data.message === 'REQUEST_ACCESS_TOKEN_RESPONSE') {
+                    window.removeEventListener('message', handler);
+                    resolve(event.data.access_token);
+                }
+            };
+            window.addEventListener('message', handler);
+        });
+    }
     // Hàm lấy user data đã được mã hóa từ parent window và giải mã nó bằng CryptoJS
     async function getUserData() {
         try {
@@ -314,6 +327,10 @@
         showLoading();
         const userData = await getUserData();
         console.log("userData", userData);
+
+        const accessToken = await getAccessTokenFromParent();
+        console.log("accessToken", accessToken);
+
         // await getParamsAndFetchIfCode();
         // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
         if (locationId) {
@@ -380,9 +397,6 @@
     window.addEventListener('message', (event) => {
         // Optionally check event.origin for security
         console.log("window GHL event", event);
-        if (event.data && event.data.locationId) {
-            const locationId = event.data.locationId;
-        }
     });
 
     button.addEventListener('click', async function() {
