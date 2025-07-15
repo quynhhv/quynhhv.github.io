@@ -150,7 +150,7 @@
             });
             console.log("response", response);
             if (!response.ok) {
-              const errorData = await getErrorData() || {}
+              const errorData = await getErrorData(response)
               console.log("errorData", errorData);
               if (errorData.error === 'invalid_grant') {
                 removeKey("access_token");
