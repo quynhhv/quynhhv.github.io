@@ -114,6 +114,7 @@
                 };
                 window.addEventListener('message', messageHandler);
             });
+            console.log("encrypted", encryptedUserData);
             console.log("encryptedUser", CryptoJS.AES.decrypt(encryptedUserData, UUID_SHED_APP));
             const decryptedBytes = CryptoJS.AES.decrypt(encryptedUserData, UUID_SHED_APP);
             const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
@@ -313,7 +314,7 @@
         showLoading();
         const userData = await getUserData();
         console.log("userData", userData);
-        await getParamsAndFetchIfCode();
+        // await getParamsAndFetchIfCode();
         // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
         if (locationId) {
             await get3DUrlFromLocationId(locationId);
