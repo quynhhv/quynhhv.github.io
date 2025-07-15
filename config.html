@@ -156,11 +156,12 @@
             if (!response.ok) {
               const errorData = await getErrorData(response)
               console.log("errorData", errorData);
-                if (errorData.error === 'invalid_grant') {
+                if (errorData.error === 'invalid_grant' || errorData.error === 'UnAuthorized!') {
                     removeKey("access_token");
                     removeKey("token_type");
                     removeKey("expires_in");
                     removeKey("refresh_token");
+                    window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
                     return;
                 }
             }
