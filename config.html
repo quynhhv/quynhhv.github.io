@@ -99,6 +99,32 @@
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
+    // Function to save value to localStorage
+    function removeKey(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (e) {
+            console.error('Cannot save to localStorage:', e);
+        }
+    }
+
+    // Function to save value to localStorage
+    function setLocalStorage(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.error('Cannot save to localStorage:', e);
+        }
+    }
+
+    async function getErrorData(response) {
+        try {
+            return await response.json();
+        } catch (e) {
+            return { message: 'default_error' };
+        }
+    }
+
     // Hàm lấy access_token từ GHL thông qua API OAuth2
     async function getAccessTokenFromGHL() {
         const refresh_token = getLocalStorage("refresh_token");
@@ -124,7 +150,15 @@
             });
             console.log("response", response);
             if (!response.ok) {
-                return null;
+              const errorData = await getErrorData() || {}
+              console.log("errorData", errorData);
+              if (errorData.error === 'invalid_grant') {
+                removeKey("access_token");
+                removeKey("token_type");
+                removeKey("expires_in");
+                removeKey("refresh_token");
+                window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
+              }
             }
             const data = await response.json();
             console.log("getAccessTokenFromGHL", data);
@@ -239,14 +273,6 @@
         return {};
     }
 
-    // Function to save value to localStorage
-    function setLocalStorage(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-            console.error('Cannot save to localStorage:', e);
-        }
-    }
 
     async function getParamsAndFetchIfCode() {
         const params = getParamsFromCurrentPage();
