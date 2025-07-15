@@ -129,8 +129,7 @@
         }
     }
 
-    // Hàm lấy access_token từ GHL thông qua API OAuth2
-    async function getAccessTokenFromGHL() {
+
         const refresh_token = getLocalStorage("refresh_token");
         const userData = getLocalStorage("userData");
         console.log("userData", userData);
@@ -170,7 +169,6 @@
                 }
             }
             const data = await response.json();
-            console.log("getAccessTokenFromGHL", data);
             const access_token = data.access_token;
             const token_type = data.token_type;
             const expires_in = data.expires_in;
@@ -388,74 +386,6 @@
             hideLoading();
         }
     }
-    // Hàm lấy danh sách locations từ API
-    async function getLocations({ limit = 20, isInstalled = true, companyId = undefined, appId = undefined } = {}) {
-        try {
-            const accessToken = getLocalStorage("access_token");
-            if (!accessToken) {
-               return [];
-            }
-            let apiUrl = `https://services.leadconnectorhq.com/oauth/installedLocations?limit=${limit}&isInstalled=${isInstalled}`;
-            if (companyId) apiUrl += `&companyId=${encodeURIComponent(companyId)}`;
-            if (appId) apiUrl += `&appId=${encodeURIComponent(appId)}`;
-
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Version': '2021-07-28'
-                }
-            });
-
-            if (!response.ok) {
-                return null;
-            }
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Lỗi khi gọi API getLocations:', error);
-            return null;
-        }
-    }
-
-    // Render locations list
-    async function renderLocationsList() {
-        const container = document.getElementById('locations-list');
-        if (!container) return;
-        container.innerHTML = '<div style="text-align:center;color:#888;">Loading locations...</div>';
-        let locationsData = await getLocations({ limit: 50 });
-        if (!locationsData || !Array.isArray(locationsData.locations)) {
-            container.innerHTML = '<div style="color:red;">No locations found.</div>';
-            return;
-        }
-        const locations = locationsData.locations;
-        container.innerHTML = '';
-        locations.forEach(loc => {
-            const locDiv = document.createElement('div');
-            locDiv.style.marginBottom = '18px';
-            locDiv.innerHTML = `
-                <div style="font-weight:600;margin-bottom:6px;">${loc.name || loc.title || loc.locationName || 'Location'}</div>
-                <input type="text" class="config-input" id="location-url-${loc.id || loc.locationId}" placeholder="Enter 3D URL for this location" style="margin-bottom:0;" />
-                <button type="button" class="config-button" id="save-location-${loc.id || loc.locationId}" style="margin-top:8px;opacity:0.7;cursor:not-allowed;" disabled>Save</button>
-            `;
-            container.appendChild(locDiv);
-            // Add event listeners for input and button
-            const input = locDiv.querySelector('input');
-            const button = locDiv.querySelector('button');
-            input.addEventListener('input', function() {
-                if (isValidUrl(input.value.trim())) {
-                    button.disabled = false;
-                    button.style.opacity = 1;
-                    button.style.cursor = 'pointer';
-                } else {
-                    button.disabled = true;
-                    button.style.opacity = 0.7;
-                    button.style.cursor = 'not-allowed';
-                }
-            });
-        });
-    }
 
     // Call renderLocationsList after user is authenticated and locations are available
     (async function() {
@@ -463,10 +393,10 @@
         await getParamsAndFetchIfCode();
         const userData = await getUserData();
         if (userData) {
+            locationId = userData.activeLocation;
+            setLocalStorage("locationId", locationId);
             setLocalStorage("userData", userData);
         }
-        const accessToken = await getAccessTokenFromGHL();
-        await renderLocationsList();
        
         // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
         if (locationId) {
@@ -477,10 +407,11 @@
                 locationId = getLocalStorage('locationId');
                 if (locationId) {
                     await get3DUrlFromLocationId(locationId);
-                } else {
-                    // Nếu không có locationId, tự động chuyển hướng người dùng sang trang authorize để chọn location
-                    window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
-                }
+                } 
+                // else {
+                //     // Nếu không có locationId, tự động chuyển hướng người dùng sang trang authorize để chọn location
+                //     window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
+                // }
                 hideLoading();
             }, 800);
         }
