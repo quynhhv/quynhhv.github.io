@@ -99,18 +99,45 @@
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
-    // Lấy access_token từ parent window qua postMessage
-    async function getAccessTokenFromParent() {
-        return new Promise((resolve) => {
-            window.parent.postMessage({ message: 'REQUEST_ACCESS_TOKEN' }, '*');
-            const handler = (event) => {
-                if (event.data && event.data.message === 'REQUEST_ACCESS_TOKEN_RESPONSE') {
-                    window.removeEventListener('message', handler);
-                    resolve(event.data.access_token);
-                }
-            };
-            window.addEventListener('message', handler);
-        });
+    // Hàm lấy access_token từ GHL thông qua API OAuth2
+    async function getAccessTokenFromGHL({
+        client_id,
+        client_secret,
+        code,
+        refresh_token = '',
+        user_type = '',
+        redirect_uri
+    }) {
+        const refresh_token = getLocalStorage("refresh_token");
+        const userData = getLocalStorage("userData");
+        const user_type = userData?.type === '"agency" ? "Company" : "Location";
+        const url = 'https://services.leadconnectorhq.com/oauth/token';
+        const params = new URLSearchParams();
+        params.append('client_id', "6858dabc2d4f660dc8140b08-mcxvjp8g");
+        params.append('client_secret', "3bae6859-6561-405d-adb3-c43ce4e07749");
+        params.append('grant_type', 'refresh_token');
+        params.append('refresh_token', refresh_token);
+        if (user_type) params.append('user_type', user_type);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            });
+            if (!response.ok) {
+                return null;
+            }
+            const data = await response.json();
+            console.log("getAccessTokenFromGHL", data);
+            return data.access_token;
+        } catch (error) {
+            console.error('Lỗi khi lấy access_token từ GHL:', error);
+            return null;
+        }
     }
     // Hàm lấy user data đã được mã hóa từ parent window và giải mã nó bằng CryptoJS
     async function getUserData() {
@@ -326,10 +353,10 @@
     (async function() {
         showLoading();
         const userData = await getUserData();
-        console.log("userData", userData);
-
-        const accessToken = await getAccessTokenFromParent();
-        console.log("accessToken", accessToken);
+        if (userData) {
+            setLocalStorage("userData", userData);
+        }
+        const accessToken = await getAccessTokenFromGHL();
 
         // await getParamsAndFetchIfCode();
         // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
