@@ -100,14 +100,7 @@
     }
 
     // Hàm lấy access_token từ GHL thông qua API OAuth2
-    async function getAccessTokenFromGHL({
-        client_id,
-        client_secret,
-        code,
-        refresh_token = '',
-        user_type = '',
-        redirect_uri
-    }) {
+    async function getAccessTokenFromGHL() {
         const refresh_token = getLocalStorage("refresh_token");
         const userData = getLocalStorage("userData");
         const user_type = userData?.type === '"agency" ? "Company" : "Location";
