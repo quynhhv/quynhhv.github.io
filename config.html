@@ -103,7 +103,7 @@
     async function getAccessTokenFromGHL() {
         const refresh_token = getLocalStorage("refresh_token");
         const userData = getLocalStorage("userData");
-        const user_type = userData?.type === '"agency" ? "Company" : "Location";
+        const user_type = userData?.type === "agency" ? "Company" : "Location";
         const url = 'https://services.leadconnectorhq.com/oauth/token';
         const params = new URLSearchParams();
         params.append('client_id', "6858dabc2d4f660dc8140b08-mcxvjp8g");
