@@ -130,60 +130,6 @@
     }
 
 
-        const refresh_token = getLocalStorage("refresh_token");
-        const userData = getLocalStorage("userData");
-        console.log("userData", userData);
-        const user_type = userData?.type === "agency" ? "Company" : "Location";
-        const url = 'https://services.leadconnectorhq.com/oauth/token';
-        const params = new URLSearchParams();
-        params.append('client_id', "6858dabc2d4f660dc8140b08-mcxvjp8g");
-        params.append('client_secret', "3bae6859-6561-405d-adb3-c43ce4e07749");
-        params.append('grant_type', 'refresh_token');
-        params.append('refresh_token', refresh_token);
-        if (user_type) params.append('user_type', user_type);
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: params
-            });
-            console.log("response", response);
-            if (!response.ok) {
-                const AUTH_URL = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
-                if (response.status === 401) {
-                    window.location.href = AUTH_URL
-                    return;
-                }
-                const errorData = await getErrorData(response)
-                if (errorData.error === 'invalid_grant' || errorData.error === 'UnAuthorized!') {
-                    removeKey("access_token");
-                    removeKey("token_type");
-                    removeKey("expires_in");
-                    removeKey("refresh_token");
-                    window.location.href = AUTH_URL;
-                    return;
-                }
-            }
-            const data = await response.json();
-            const access_token = data.access_token;
-            const token_type = data.token_type;
-            const expires_in = data.expires_in;
-            const refresh_token = data.refresh_token;
-            setLocalStorage("access_token", access_token);
-            setLocalStorage("token_type", token_type);
-            setLocalStorage("expires_in", expires_in);
-            setLocalStorage("refresh_token", refresh_token);
-            setLocalStorage("locationId", locationId);
-            return data.access_token;
-        } catch (error) {
-            console.error('Lỗi khi lấy access_token từ GHL:', error);
-            return null;
-        }
-    }
     // Hàm lấy user data đã được mã hóa từ parent window và giải mã nó bằng CryptoJS
     async function getUserData() {
         try {
