@@ -1,6 +1,7 @@
 <script src="posthog-init.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <link href="https://fonts.cdnfonts.com/css/proxima-nova" rel="stylesheet">
+
 <style>
     body, .config-container, .config-logo-wrapper, .config-logo, .config-label, .config-input, .config-button {
         font-family: 'Proxima Nova', 'Arial', sans-serif !important;
@@ -24,7 +25,7 @@
     .config-label {
         display: block;
         margin-bottom: 8px;
-        font-weight: 600; /* Sử dụng semi bold */
+        font-weight: 600; /* Use semi bold */
         margin-top: 60px;
     }
     .config-input {
@@ -75,6 +76,7 @@
         100% { transform: rotate(360deg);}
     }
 </style>
+
 <div class="config-container">
     <div class="config-logo-wrapper">
         <img src="https://dxm5q5264srx2.cloudfront.net/wp-content/uploads/sites/4/2023/04/Powered-by-ShedPro.svg" alt="Powered by ShedPro" class="config-logo" />
@@ -86,311 +88,333 @@
 <div id="loading-overlay" class="loading-overlay" style="display:none;">
     <div class="loading-spinner"></div>
 </div>
+
 <script>
-    const HOOK_AUTH_API = "https://hook.eu2.make.com/3kxcgpeeld62xia6gbfegnjp6bemsfca";
-    const GET_3DURL_API = "https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z";
-    const UUID = "19706c2b-e70e-47cb-89da-fdc0935db714";
+const HOOK_AUTH_API = "https://hook.eu2.make.com/3kxcgpeeld62xia6gbfegnjp6bemsfca";
+const GET_3DURL_API = "https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z";
+const UUID = "19706c2b-e70e-47cb-89da-fdc0935db714";
+const UUID_SHED_APP = "4b686719-6de6-4fe0-aac0-f79293a46784";
 
-    function showLoading() {
-        document.getElementById('loading-overlay').style.display = 'flex';
-    }
-    function hideLoading() {
-        document.getElementById('loading-overlay').style.display = 'none';
-    }
+function showLoading() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
+}
 
-    // Hàm lấy user data đã được mã hóa từ parent window và giải mã nó bằng CryptoJS
-    async function getUserData() {
+// Get encrypted user data from parent window and decrypt it using CryptoJS
+async function getUserData() {
+    try {
+        // Request user data from parent window
+        const encryptedUserData = await new Promise((resolve) => {
+            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+            // Listen for response from parent
+            const messageHandler = ({ data }) => {
+                if (data.message === 'REQUEST_USER_DATA_RESPONSE') {
+                    window.removeEventListener('message', messageHandler);
+                    resolve(data.payload);
+                }
+            };
+            window.addEventListener('message', messageHandler);
+        });
+        const decryptedBytes = CryptoJS.AES.decrypt(encryptedUserData, UUID_SHED_APP);
+        const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+
         try {
-            // Gửi yêu cầu lấy user data từ parent window
-            const encryptedUserData = await new Promise((resolve) => {
-                window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
-                // Lắng nghe phản hồi từ parent
-                const messageHandler = ({ data }) => {
-                    if (data.message === 'REQUEST_USER_DATA_RESPONSE') {
-                        window.removeEventListener('message', messageHandler);
-                        resolve(data.payload);
-                    }
-                };
-                window.addEventListener('message', messageHandler);
-            });
-            console.log("encryptedUser", CryptoJS.AES.decrypt(encryptedUserData, "4b686719-6de6-4fe0-aac0-f79293a46784"));
-            const decryptedBytes = CryptoJS.AES.decrypt(encryptedUserData, "4b686719-6de6-4fe0-aac0-f79293a46784");
-            const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
-
-            try {
-                return JSON.parse(decryptedText);
-            } catch (e) {
-                return {};
-            }
-        } catch (error) {
-            console.error('Không thể lấy hoặc giải mã user data:', error);
-            throw error;
-        }
-    }
-
-    // Hàm lấy giá trị từ localStorage theo key, tự động parse JSON nếu có thể
-    function getLocalStorage(key) {
-        try {
-            const value = localStorage.getItem(key);
-            if (value === null) return null;
-            try {
-                return JSON.parse(value);
-            } catch (e) {
-                return value;
-            }
+            return JSON.parse(decryptedText);
         } catch (e) {
             return null;
         }
+    } catch (error) {
+        console.error('Cannot get or decrypt user data:', error);
+        return null;
     }
+}
 
-    let locationId = getLocalStorage('locationId');
-    let url3d = getLocalStorage('3dUrl');
+async function getAccessTokenFromParent() {
+    try {
+        // Request access token from parent window
+        const accessToken = await new Promise((resolve) => {
+            window.parent.postMessage({ message: 'REQUEST_ACCESS_TOKEN' }, '*');
+            // Listen for response from parent
+            const messageHandler = ({ data }) => {
+                if (data.message === 'REQUEST_ACCESS_TOKEN_RESPONSE') {
+                    window.removeEventListener('message', messageHandler);
+                    resolve(data.payload); // The access token should be in data.payload
+                }
+            };
+            window.addEventListener('message', messageHandler);
+        });
+        return accessToken;
+    } catch (error) {
+        console.error('Cannot get access token from parent:', error);
+        return null;
+    }
+}
 
-    // Function to check if URL is valid
-    function isValidUrl(url) {
+// Get value from localStorage by key, auto-parse JSON if possible
+function getLocalStorage(key) {
+    try {
+        const value = localStorage.getItem(key);
+        if (value === null) return null;
         try {
-            const u = new URL(url);
-            return u.protocol === "http:" || u.protocol === "https:";
+            return JSON.parse(value);
         } catch (e) {
-            return false;
+            return value;
         }
+    } catch (e) {
+        return null;
     }
+}
 
-
-    // Function to get params from current page URL
-    function getParamsFromCurrentPage() {
-        const params = {};
-        const searchParams = new URLSearchParams(window.location.search);
-        for (const [key, value] of searchParams.entries()) {
-            params[key] = value;
-        }
-        return params;
+// Save value to localStorage
+function setLocalStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        console.error('Cannot save to localStorage:', e);
     }
+}
 
-    // Function to get params from the parent window's URL (if available)
-    function getParamsFromParentUrl() {
-        try {
-            if (window.parent && window.parent !== window) {
-                const parentUrl = document.referrer || (window.parent.location ? window.parent.location.href : '');
-                if (parentUrl) {
-                    const params = {};
-                    const urlObj = new URL(parentUrl);
-                    for (const [key, value] of urlObj.searchParams.entries()) {
-                        params[key] = value;
-                    }
-                    return params;
-                }
-            }
-        } catch (e) {
-            // Some browsers may block access to window.parent.location for security reasons
-            // Can fallback to document.referrer
-            try {
-                const ref = document.referrer;
-                if (ref) {
-                    const params = {};
-                    const urlObj = new URL(ref);
-                    for (const [key, value] of urlObj.searchParams.entries()) {
-                        params[key] = value;
-                    }
-                    return params;
-                }
-            } catch (err) {
-                // Could not get anything
-            }
-        }
-        return {};
+// Check if URL is valid
+function isValidUrl(url) {
+    try {
+        const u = new URL(url);
+        return u.protocol === "http:" || u.protocol === "https:";
+    } catch (e) {
+        return false;
     }
+}
 
-    // Function to save value to localStorage
-    function setLocalStorage(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-            console.error('Cannot save to localStorage:', e);
-        }
+// Get params from current page URL
+function getParamsFromCurrentPage() {
+    const params = {};
+    const searchParams = new URLSearchParams(window.location.search);
+    for (const [key, value] of searchParams.entries()) {
+        params[key] = value;
     }
+    return params;
+}
 
-    async function getParamsAndFetchIfCode() {
-        const params = getParamsFromCurrentPage();
-        if (params.code) {
-            try {
-                showLoading();
-                // Change the API URL below to match your system
-                const apiUrl = `${HOOK_AUTH_API}?code=${encodeURIComponent(params.code)}`;
-                const response = await fetch(apiUrl, {
-                    headers: {
-                        'x-make-apikey': UUID,
-                        'Content-Type': 'application/json',
-                    }
-                });
-                if (!response.ok) {
-                    // Gửi lỗi lên posthog
-                    posthog.capture('getParamsAndFetchIfCode_api_error', {
-                        code: params.code,
-                        status: response.status,
-                        statusText: response.statusText
-                    });
-                    throw new Error('Error calling API');
+// Get params from parent window's URL (if available)
+function getParamsFromParentUrl() {
+    try {
+        if (window.parent && window.parent !== window) {
+            const parentUrl = document.referrer || (window.parent.location ? window.parent.location.href : '');
+            if (parentUrl) {
+                const params = {};
+                const urlObj = new URL(parentUrl);
+                for (const [key, value] of urlObj.searchParams.entries()) {
+                    params[key] = value;
                 }
-                const data = await response.json();
-                if (data && data.access_token) {
-                    const access_token = data.access_token;
-                    const token_type = data.token_type;
-                    const expires_in = data.expires_in;
-                    const refresh_token = data.refresh_token;
-                    locationId = data.locationId;
-                    setLocalStorage("access_token", access_token);
-                    setLocalStorage("token_type", token_type);
-                    setLocalStorage("expires_in", expires_in);
-                    setLocalStorage("refresh_token", refresh_token);
-                    setLocalStorage("locationId", locationId);
-                }
-            } catch (error) {
-                // Gửi lỗi lên posthog
-                posthog.capture('getParamsAndFetchIfCode_exception', {
-                    code: params.code,
-                    error: error?.message || error
-                });
-                console.error('Error fetching data from API:', error);
-            } finally {
-                hideLoading();
+                return params;
             }
         }
+    } catch (e) {
+        // Some browsers may block access to window.parent.location for security reasons
+        // Fallback to document.referrer
+        try {
+            const ref = document.referrer;
+            if (ref) {
+                const params = {};
+                const urlObj = new URL(ref);
+                for (const [key, value] of urlObj.searchParams.entries()) {
+                    params[key] = value;
+                }
+                return params;
+            }
+        } catch (err) {
+            // Could not get anything
+        }
     }
+    return {};
+}
 
-    // Function to get 3dUrl from locationId
-    async function get3DUrlFromLocationId() {
+let locationId = getLocalStorage('locationId');
+let url3d = getLocalStorage('3dUrl');
+
+// Fetch tokens if "code" param is present in URL
+async function getParamsAndFetchIfCode() {
+    const params = getParamsFromCurrentPage();
+    if (params.code) {
         try {
             showLoading();
-            // Thay đổi API URL để encode locationId
-            const apiUrl = `https://hook.us2.make.com/yqfwb22xmb5se5sbrh6kmedublb8848z?locationId=${locationId}`;
+            const apiUrl = `${HOOK_AUTH_API}?code=${encodeURIComponent(params.code)}`;
             const response = await fetch(apiUrl, {
-                method: 'GET',
                 headers: {
                     'x-make-apikey': UUID,
+                    'Content-Type': 'application/json',
                 }
             });
             if (!response.ok) {
-                // Gửi lỗi lên posthog
-                posthog.capture('get3DUrlFromLocationId_api_error', {
-                    locationId: locationId,
+                posthog.capture('getParamsAndFetchIfCode_api_error', {
+                    code: params.code,
                     status: response.status,
                     statusText: response.statusText
                 });
-                throw new Error('Lỗi khi gọi API để lấy 3dUrl');
+                return;
             }
             const data = await response.json();
-            // Giả sử API trả về { "3dUrl": "..." }
-            url3d =  data?.["3dUrl"] || '';
-            // Sau khi lấy thành công, set giá trị vào input
-            const input = document.getElementById('website-link');
-            if (input && url3d) {
-                input.value = url3d;
-                // Nếu url hợp lệ thì enable nút luôn
-                if (isValidUrl(url3d)) {
-                    const button = document.getElementById('submit-link');
-                    button.disabled = false;
-                    button.style.opacity = 1;
-                    button.style.cursor = 'pointer';
-                }
+            if (data && data.access_token) {
+                const { access_token, token_type, expires_in, refresh_token } = data;
+                locationId = data.locationId;
+                setLocalStorage("access_token", access_token);
+                setLocalStorage("token_type", token_type);
+                setLocalStorage("expires_in", expires_in);
+                setLocalStorage("refresh_token", refresh_token);
+                setLocalStorage("locationId", locationId);
             }
-            return data;
         } catch (error) {
-            // Gửi lỗi lên posthog
-            posthog.capture('get3DUrlFromLocationId_exception', {
-                locationId: locationId,
+            posthog.capture('getParamsAndFetchIfCode_exception', {
+                code: params.code,
                 error: error?.message || error
             });
-            console.error('Error getting 3dUrl from locationId:', error);
-            return null;
+            console.error('Error fetching data from API:', error);
         } finally {
             hideLoading();
         }
     }
+}
 
-    (async function() {
+// Get 3D URL from locationId
+async function get3DUrlFromLocationId() {
+    try {
         showLoading();
-        const userData = await getUserData();
-        console.log("userData", userData);
-        await getParamsAndFetchIfCode();
-        // Nếu locationId đã có thì gọi luôn, nếu chưa có thì chờ getParamsAndFetchIfCode xong mới gọi
-        if (locationId) {
-            await get3DUrlFromLocationId(locationId);
-        } else {
-            // Đợi 1 chút cho getParamsAndFetchIfCode lấy xong locationId
-            setTimeout(async () => {
-                locationId = getLocalStorage('locationId');
-                if (locationId) {
-                    await get3DUrlFromLocationId(locationId);
-                } else {
-                    // Nếu không có locationId, tự động chuyển hướng người dùng sang trang authorize để chọn location
-                    window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
-                }
-                hideLoading();
-            }, 800);
-        }
-        hideLoading();
-    })();
-
-    console.log('Current page params:', getParamsFromCurrentPage());
-    console.log("localstorage", localStorage);
-
-    const input = document.getElementById('website-link');
-    const button = document.getElementById('submit-link');
-
-    input.addEventListener('input', function() {
-        if (isValidUrl(input.value.trim())) {
-            button.disabled = false;
-            button.style.opacity = 1;
-            button.style.cursor = 'pointer';
-        } else {
-            button.disabled = true;
-            button.style.opacity = 0.7;
-            button.style.cursor = 'not-allowed';
-        }
-    });
-
-    async function apiUpdate3DUrl(body = {}) {
-        try {
-            showLoading();
-            const apiUrl = 'https://hook.us2.make.com/vkv1k3v47cew2452pi8bj3pxr21n5qhr';
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-make-apikey': UUID
-                },
-                body: JSON.stringify(body)
-            });
-            if (!response.ok) {
-                throw new Error('Error calling API');
+        const apiUrl = `${GET_3DURL_API}?locationId=${locationId}`;
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'x-make-apikey': UUID,
             }
-            const data = await response.json();
-            console.log("update apiUpdate3DUrl success");
-            return data;
-        } catch (error) {
-            console.error('Error calling API POST:', error);
-            throw error;
-        } finally {
-            hideLoading();
+        });
+        if (!response.ok) {
+            posthog.capture('get3DUrlFromLocationId_api_error', {
+                locationId: locationId,
+                status: response.status,
+                statusText: response.statusText
+            });
+            throw new Error('Error calling API to get 3dUrl');
         }
+        const data = await response.json();
+        url3d = data?.["3dUrl"] || '';
+        // Set value to input if found
+        const input = document.getElementById('website-link');
+        if (input && url3d) {
+            input.value = url3d;
+            // Enable button if url is valid
+            if (isValidUrl(url3d)) {
+                const button = document.getElementById('submit-link');
+                button.disabled = false;
+                button.style.opacity = 1;
+                button.style.cursor = 'pointer';
+            }
+        }
+        return data;
+    } catch (error) {
+        posthog.capture('get3DUrlFromLocationId_exception', {
+            locationId: locationId,
+            error: error?.message || error
+        });
+        console.error('Error getting 3dUrl from locationId:', error);
+        return null;
+    } finally {
+        hideLoading();
     }
+}
 
-    window.addEventListener('message', (event) => {
-        // Optionally check event.origin for security
-        console.log("window GHL event", event);
-        if (event.data && event.data.locationId) {
-            const locationId = event.data.locationId;
-            console.log("locationId", locationId);
-        }
-    });
+// Main initialization
+(async function() {
+    showLoading();
+    const userData = await getUserData();
+    const accessToken = await getAccessTokenFromParent();
+    console.log("accessToken", accessToken);
+    if (accessToken) {
+        setLocalStorage("access_token", accessToken);
+    }
+    if (userData) {
+        console.log("userData", userData);
+        setLocalStorage("userData", userData);
+    }
+    await getParamsAndFetchIfCode();
+    // If locationId exists, fetch 3D URL, else wait and try again or redirect
+    if (locationId) {
+        await get3DUrlFromLocationId(locationId);
+    } else {
+        setTimeout(async () => {
+            locationId = getLocalStorage('locationId');
+            if (locationId) {
+                await get3DUrlFromLocationId(locationId);
+            } else {
+                // Redirect user to authorize page if no locationId
+                window.location.href = "https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=https://quynhhv.github.io/config&client_id=6858dabc2d4f660dc8140b08-mcxvjp8g&scope=opportunities.readonly%20opportunities.write%20locations.readonly%20users.readonly";
+            }
+            hideLoading();
+        }, 800);
+    }
+    hideLoading();
+})();
 
-    button.addEventListener('click', async function() {
-        const url = input.value.trim();
-        if (isValidUrl(url)) {
-            await apiUpdate3DUrl({ "3dUrl": url, locationId })
-        } else {
-            alert('Invalid link');
+console.log('Current page params:', getParamsFromCurrentPage());
+console.log("localStorage", localStorage);
+
+const input = document.getElementById('website-link');
+const button = document.getElementById('submit-link');
+
+input.addEventListener('input', function() {
+    if (isValidUrl(input.value.trim())) {
+        button.disabled = false;
+        button.style.opacity = 1;
+        button.style.cursor = 'pointer';
+    } else {
+        button.disabled = true;
+        button.style.opacity = 0.7;
+        button.style.cursor = 'not-allowed';
+    }
+});
+
+// API call to update 3D URL
+async function apiUpdate3DUrl(body = {}) {
+    try {
+        showLoading();
+        const apiUrl = 'https://hook.us2.make.com/vkv1k3v47cew2452pi8bj3pxr21n5qhr';
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-make-apikey': UUID
+            },
+            body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+            throw new Error('Error calling API');
         }
-    });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error calling API POST:', error);
+        throw error;
+    } finally {
+        hideLoading();
+    }
+}
+
+// Listen for messages from parent window (optional, for future use)
+window.addEventListener('message', (event) => {
+    // Optionally check event.origin for security
+    console.log("window GHL event", event);
+    if (event.data && event.data.locationId) {
+        // You can handle locationId here if needed
+        // const locationId = event.data.locationId;
+    }
+});
+
+// Save button click handler
+button.addEventListener('click', async function() {
+    const url = input.value.trim();
+    if (isValidUrl(url)) {
+        await apiUpdate3DUrl({ "3dUrl": url, locationId });
+    } else {
+        alert('Invalid link');
+    }
+});
 </script>
